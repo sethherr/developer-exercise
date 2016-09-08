@@ -5,8 +5,96 @@
   <script src="http://code.jquery.com/jquery-latest.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.8.3/underscore-min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/backbone.js/1.1.2/backbone-min.js"></script>
+  <style>
+    table { width: 100%; margin: 30px 0; }
+    td { border: 1px solid #ccc; padding: 1em .5em;}
+  </style>
+  <script type="text/template" id="quote-row">
+    <td><%= context %></td>
+    <td><%= source %></td>
+    <td><%= theme %></td>
+    <td><%= quote %></td>
+  </script>
 </head>
 <body>
-
+  <table>
+    <thead>
+      <tr>
+        <th>Context</th>
+        <th>Source</th>
+        <th>Theme</th>
+        <th>Quote</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+   </table>
 </body>
+  <script>
+    var quoteUrl = "https://gist.githubusercontent.com/anonymous/8f61a8733ed7fa41c4ea/raw/1e90fd2741bb6310582e3822f59927eb535f6c73/quotes.json";
+
+    var Quote = Backbone.Model.extend({});
+
+    var quote1 = new Quote({
+      quote: "It's time to kick ass and chew bubblegum.",
+      context: "Duke Nukem 3D",
+      source: "Duke Nukem",
+      theme: "games"
+    });
+
+    var quote2 = new Quote({
+      quote: "The first rule of Fight Club is: you do not talk about Fight Club. The second rule of Fight Club is: you DO NOT talk about Fight Club.",
+      context: "Fight Club",
+      source: "Tyler Durden",
+      theme: "movies"
+    });
+
+    var quote3 = new Quote({
+      quote: "Your 'best'? Losers always whine about their best. Winners go home and fuck the prom queen.",
+      context: "The Rock",
+      source: "John Mason",
+      theme: "movies"
+    });
+
+    var QuotesCollection = Backbone.Collection.extend({
+      model: Quote
+    });
+
+    var Quotes = new QuotesCollection;
+
+    Quotes.add(quote1);
+    Quotes.add(quote2);
+    Quotes.add(quote3);
+
+    // Create Quotes View
+    var QuotesView = Backbone.View.extend({
+      el: 'tbody',
+
+      initialize: function() {
+        this.render();
+      },
+
+      render: function() {
+        this.$el.html('');
+        Quotes.each(function(model) {
+          var quote = new QuoteView({
+            model: model
+          });
+          this.$el.append(quote.render().el);
+        }.bind(this));
+        return this;
+      }
+    });
+
+    var QuoteView = Backbone.View.extend({
+      tagName: 'tr',
+      template: _.template($('#quote-row').html()),
+      render: function() {
+        this.$el.html(this.template(this.model.attributes));
+        return this;
+      }
+    });
+
+    // Launch simple_backbone
+    var simple_backbone = new QuotesView;
+  </script>
 </html>
