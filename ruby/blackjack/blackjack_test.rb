@@ -165,10 +165,16 @@ class BlackjackTest < Minitest::Test
       Card.new(:hearts, :king, 10)
     ]
     blackjack = Blackjack.new(player)
-    blackjack.start
+    player.is_hitting = true
     blackjack.deal
-    blackjack.display
+    assert blackjack.finished
     assert blackjack.dealer.won
-    assert !blackjack.player.won
+    assert blackjack.dealer.cards.size, 0 # Because bust caused the immediate win
+    assert !blackjack.non_dealer.won
   end
+
+  # I'm unsure of:
+  # "As a User I can blackjack (win immediately) when I am getting cards"
+  # This isn't the way blackjack works - if the dealer blackjacks too, it's a push (https://en.wikipedia.org/wiki/Blackjack)
+  # In general, I didn't implement push functionality, it wasn't in the list of functionality.
 end

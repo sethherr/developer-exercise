@@ -75,6 +75,7 @@ class Player
   end
 
   def is_hitting
+    return false if bust
     @is_dealer ? (cards_maximum_value < 17) : @is_hitting
   end
 
@@ -111,28 +112,29 @@ end
 
 class Blackjack
   attr_accessor :finished
-  attr_reader :players, :deck
-  def initialize(player)
-    @deck, @finished = Deck.new, false
-    @players = [player, Player.new(is_dealer: true)]
-  end
-
-  def dealer
-    @players.where(is_dealer: true).first
-  end
-
-  def non_dealer
-    @players.where(is_dealer: false).first
+  attr_reader :players, :deck, :dealer, :non_dealer
+  def initialize(player, dealer = nil)
+    @deck, @finished, @non_dealer = Deck.new, false, player
+    @dealer = dealer || Player.new(is_dealer: true)
+    @players = [@non_dealer, @dealer]
   end
 
   def deal
-    non_dealer.cards << @deck.deal_card if non_dealer.receives_another_card
-    dealer.cards << @deck.deal_card if dealer.receives_another_card
-    non_dealer.won = non_dealer.blackjack
+    @non_dealer.cards << @deck.deal_card if @non_dealer.receives_another_card
+    return if check_if_finished
+    @dealer.cards << @deck.deal_card if @dealer.receives_another_card
+    check_if_finished
+  end
+
+  def check_if_finished
+    @non_dealer.won = @non_dealer.blackjack
+    @non_dealer.won = @dealer.bust unless @non_dealer.won
+    @dealer.won = @non_dealer.bust || !@non_dealer.won
+    @finished = @non_dealer.won || @dealer.won
   end
 
   def dealer_finish
-    dealer.cards << @deck.deal_card until dealer.receives_another_card
+    @dealer.cards << @deck.deal_card until @dealer.receives_another_card
   end
 
   def start
@@ -140,6 +142,7 @@ class Blackjack
   end
 
   def display
+    puts # get a clean line
     @players.each { |player| puts "#{player.name}: #{player.visible_cards.map(&:display).join(', ')}" }
   end
 end
