@@ -8,6 +8,7 @@
   <style>
     table { width: 100%; margin: 30px 0; }
     td { border: 1px solid #ccc; padding: 1em .5em;}
+    p { text-align: center; }
   </style>
   <script type="text/template" id="quote-row">
     <td><%= context %></td>
@@ -27,59 +28,78 @@
       </tr>
     </thead>
     <tbody></tbody>
-   </table>
+  </table>
+  <p>
+    <label for="page">Page</label>
+    <input id="page" type="number" step="1" min="1" value="1">
+    of <input id="pages" type="number" value="12" min="1" disabled="true"> pages
+  </p>
+  <p>
+    <label for="per_page">Per page</label>
+    <input id="per_page" type="number" step="1" min="1" value="7" max="15">
+  </p>
 </body>
   <script>
-    var quoteUrl = "https://gist.githubusercontent.com/anonymous/8f61a8733ed7fa41c4ea/raw/1e90fd2741bb6310582e3822f59927eb535f6c73/quotes.json";
-
-    var Quote = Backbone.Model.extend({});
-
-    var quote1 = new Quote({
-      quote: "It's time to kick ass and chew bubblegum.",
-      context: "Duke Nukem 3D",
-      source: "Duke Nukem",
-      theme: "games"
-    });
-
-    var quote2 = new Quote({
-      quote: "The first rule of Fight Club is: you do not talk about Fight Club. The second rule of Fight Club is: you DO NOT talk about Fight Club.",
-      context: "Fight Club",
-      source: "Tyler Durden",
-      theme: "movies"
-    });
-
-    var quote3 = new Quote({
-      quote: "Your 'best'? Losers always whine about their best. Winners go home and fuck the prom queen.",
-      context: "The Rock",
-      source: "John Mason",
-      theme: "movies"
-    });
+    var Quote = Backbone.Model.extend();
 
     var QuotesCollection = Backbone.Collection.extend({
+      url: "https://gist.githubusercontent.com/anonymous/8f61a8733ed7fa41c4ea/raw/1e90fd2741bb6310582e3822f59927eb535f6c73/quotes.json",
       model: Quote
     });
 
-    var Quotes = new QuotesCollection;
-
-    Quotes.add(quote1);
-    Quotes.add(quote2);
-    Quotes.add(quote3);
+    var quotes = new QuotesCollection;
 
     // Create Quotes View
     var QuotesView = Backbone.View.extend({
-      el: 'tbody',
+      el: 'body',
+      
+      events: {
+        "change #page": "updatePagination",
+        "change #per_page": "updatePagination"
+      },
+
 
       initialize: function() {
+        this.updatePagination();
+        this.render();
+      },
+
+      displayedQuotes: function() {
+        startIndex = this.page() * this.perPage();
+        return quotes.slice(startIndex, startIndex + this.perPage());
+      },
+
+      perPage: function() {
+        return parseInt($('#per_page').val(), 10);
+      },
+
+      page: function() {
+        return parseInt($('#page').val(), 10) - 1;
+      },
+
+      updatePagination: function() {
+        // If values aren't allowed, reset and rerun the function
+        if (this.perPage() > 15) {
+          return this.updatePagination($('#per_page').val(15));
+        }
+        pages = Math.ceil(quotes.length / this.perPage(), 1);
+        $('#pages').val(pages);
+        $('#pages').prop('max', pages)
+        $('#page').prop('max', pages)
+        if (this.page() > pages) {
+          return this.updatePagination($('#page').val(pages));
+        }
         this.render();
       },
 
       render: function() {
-        this.$el.html('');
-        Quotes.each(function(model) {
-          var quote = new QuoteView({
-            model: model
-          });
-          this.$el.append(quote.render().el);
+        var $list = this.$('tbody').empty()
+        // Calling slice on the collection doesn't return a collection, it returns
+        // shallow copies of the models, which isn't ideal. 
+        // But in this instance, I'm calling it good enough.
+        _.each(this.displayedQuotes(), function(model) {
+          var quote = new QuoteView({model: model});
+          $list.append(quote.render().el);
         }.bind(this));
         return this;
       }
@@ -94,7 +114,6 @@
       }
     });
 
-    // Launch simple_backbone
-    var simple_backbone = new QuotesView;
+    quotes.fetch().then(function() { new QuotesView(); });
   </script>
 </html>
